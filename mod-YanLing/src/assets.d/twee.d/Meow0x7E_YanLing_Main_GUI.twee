@@ -1,0 +1,8 @@
+:: Meow0x7E_YanLing_Main_GUI [widget]
+
+<<widget "Meow0x7E_YanLing_Main_GUI">>
+	<h3>言灵</h3>
+	<hr/>
+	<p>Hello World!</p>
+	<!-- vim:set noet: -->
+<</widget>>

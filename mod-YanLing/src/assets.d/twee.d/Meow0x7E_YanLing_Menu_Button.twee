@@ -1,0 +1,8 @@
+:: Meow0x7E_YanLing_Menu_Button [widget]
+
+<<widget "Meow0x7E_YanLing_Menu_Button">>
+	<<button "言灵">>
+		<<overlayReplace "Meow0x7E_YanLing_Main_GUI">>
+	<</button>>
+	<!-- vim:set noet: -->
+<</widget>>

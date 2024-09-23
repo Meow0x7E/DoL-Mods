@@ -1,0 +1,1 @@
+globalThis.simpleFrameworks.addto('ModMenuBig', 'Meow0x7E_YanLing_Menu_Button')

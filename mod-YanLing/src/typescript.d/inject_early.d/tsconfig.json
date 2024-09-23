@@ -1,0 +1,7 @@
+{
+  "compilerOptions": {
+    "outDir": "../../../build/javascript.d/inject_early.d"
+  },
+  "extends": "../../../../tsconfig.json"
+}
+// vim:set ts=2 sts=2 sw=2:
