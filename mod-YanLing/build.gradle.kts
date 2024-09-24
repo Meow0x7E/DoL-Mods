@@ -7,20 +7,13 @@ import java.util.*
 
 version = "0.1.1"
 
-val sourceDirectory = File(layout.projectDirectory.asFile, "src")
-val buildDirectory = layout.buildDirectory.get().asFile
+val sourceDirectory = layout.projectDirectory.dir("src")
 
 /** boot.json */
 val boot = Boot(
     name = project.name,
     version = project.version.toString(),
-    scriptFileList_inject_early = hashSetOf(),
-    styleFileList = hashSetOf(),
-    scriptFileList = hashSetOf(),
-    tweeFileList = hashSetOf(),
-    imgFileList = hashSetOf(),
-    additionFile = hashSetOf(),
-    dependenceInfo = hashSetOf(
+    dependenceInfo = mutableListOf(
         DependenceInfo("ModLoader", "^2.18.3"),
         DependenceInfo("GameVersion", "^0.5.0.6"),
         DependenceInfo("Simple Frameworks", "^1.15.3")
@@ -32,7 +25,7 @@ var zipCopySpec = copySpec()
 
 /** 配置序列化 Json 时使用的格式 */
 @OptIn(ExperimentalSerializationApi::class)
-val jsonConfig = Json {
+val json = Json {
     prettyPrint = true
     prettyPrintIndent = "\t"
 }
@@ -45,7 +38,7 @@ tasks.register<DefaultTask>("processScriptFileList") {
             Pair("earlyload", boot.scriptFileList_earlyload),
             Pair("preload", boot.scriptFileList_preload),
             Pair("script", boot.scriptFileList)
-        ).forEach { (k, v) -> compileTypeScript(k).let { v.addAll(it) } }
+        ).forEach { (k, v) -> compileTypeScript(k).let { v += it } }
     }
 }
 
@@ -54,7 +47,7 @@ tasks.register<DefaultTask>("collectTweeFile") {
         FileCopySpec.findFilteredFilesRelativePaths(sourceDirectory, "assets.d/twee.d/") {
             it.isFile && it.extension == "twee"
         }.let {
-            boot.tweeFileList.addAll(it)
+            boot.tweeFileList += it
         }
     }
 }
@@ -66,9 +59,9 @@ tasks.named<DefaultTask>("buildBootJson") {
     )
 
     doLast {
-        val bootJsonFile = File(buildDirectory, "boot.json")
+        val bootJsonFile = layout.buildDirectory.get().file("boot.json").asFile
 
-        boot.buildBootJson(bootJsonFile, jsonConfig).let(logger::lifecycle)
+        boot.buildBootJson(bootJsonFile, json).let(logger::lifecycle)
 
         zipCopySpec.run {
             from(bootJsonFile)
@@ -95,7 +88,7 @@ fun compileTypeScript(name: String): List<FileCopySpec> {
         }
 
     return FileCopySpec.findFilteredFilesRelativePaths(
-        buildDirectory,
+        layout.buildDirectory.get(),
         "javascript.d/${name}.d"
     ) { it.isFile && it.extension.lowercase(Locale.getDefault()) == "js" }
 }

@@ -34,7 +34,9 @@ subprojects.onEach { project ->
         setMetadataCharset("UTF-8")
         isZip64 = true
 
-        eachFile { logger.lifecycle("压缩 -> $path") }
+        eachFile { logger.quiet("压缩 -> $path") }
+
+        doLast { logger.lifecycle("Mod 打包完成，产物已输出至 ${destinationDirectory}/${archiveFileName}") }
     }
 
     project.tasks.register<DefaultTask>("clean") {

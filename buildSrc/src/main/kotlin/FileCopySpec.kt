@@ -10,7 +10,9 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import org.gradle.api.Action
 import org.gradle.api.file.CopySpec
+import org.gradle.api.file.Directory
 import java.io.File
+import kotlin.reflect.jvm.jvmName
 
 
 /**
@@ -36,13 +38,13 @@ data class FileCopySpec(
          * @return 包含找到的文件的 [FileCopySpec] 实例列表
          */
         fun findFilteredFilesRelativePaths(
-            baseDir: File,
+            baseDir: Directory,
             relativeFilePath: String,
             filter: (File) -> Boolean
         ): List<FileCopySpec> {
-            val baseDirPath = baseDir.toPath()
+            val baseDirPath = baseDir.asFile.toPath()
 
-            return File(baseDir, relativeFilePath)
+            return baseDir.file(relativeFilePath).asFile
                 .walkTopDown()
                 .filter(filter)
                 .map { file ->
@@ -98,25 +100,14 @@ data class FileCopySpec(
  */
 class FileCopySpecSerializer : KSerializer<FileCopySpec> {
     override val descriptor: SerialDescriptor
-        get() = PrimitiveSerialDescriptor("FileCopySpec", PrimitiveKind.STRING)
+        get() = PrimitiveSerialDescriptor(FileCopySpec::class.jvmName, PrimitiveKind.STRING)
+
+    override fun serialize(encoder: Encoder, value: FileCopySpec) =
+        encoder.encodeSerializableValue(FileLocation.serializer(), value.destination)
 
     /**
-     * 序列化 [FileCopySpec] 实例，仅将目标文件的相对路径编码为字符串
-     *
-     * @param encoder 编码器，用于将对象编码为序列化格式
-     * @param value 要序列化的 [FileCopySpec] 实例
-     */
-    override fun serialize(encoder: Encoder, value: FileCopySpec) {
-        encoder.encodeString(value.destination.relativeFilePath.toString())
-    }
-
-    /**
-     * 反序列化操作不被支持，因为仅从字符串中恢复完整的[FileCopySpec]实例是不可能的
-     *
-     * @param decoder 解码器，但在这里不会被使用
      * @throws SerializationException 总是抛出，反序列化操作不被支持
      */
-    override fun deserialize(decoder: Decoder): Nothing {
+    override fun deserialize(decoder: Decoder): Nothing =
         throw SerializationException("这个方法永远无法反序列化一段已经丢失了信息的数据，这是不可能的")
-    }
 }

@@ -1,9 +1,11 @@
 package meow0x7e.dol
 
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.Required
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToStream
+import meow0x7e.dol.plugins.AbstractAddonPlugin
 import org.gradle.api.Action
 import org.gradle.api.file.CopySpec
 import java.io.ByteArrayOutputStream
@@ -20,7 +22,7 @@ data class Boot(
      * 会在当前 `Mod` 加载后立即插入到 [DOM](https://developer.mozilla.org/zh-CN/docs/Web/API/Document_Object_Model/Introduction) 当中，
      * 使浏览器按照 [&lt;script&gt;](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Element/script) 脚本元素的执行方式执行
      */
-    var scriptFileList_inject_early: MutableSet<FileCopySpec> = hashSetOf(),
+    var scriptFileList_inject_early: MutableList<FileCopySpec> = mutableListOf(),
 
     /**
      * 提前加载的 [JavaScript](https://developer.mozilla.org/zh-CN/docs/Glossary/JavaScript) 脚本，
@@ -28,7 +30,7 @@ data class Boot(
      * 由 [ModLoader](https://github.com/Lyoko-Jeremie/sugarcube-2-ModLoader) 执行并等待异步指令返回，
      * 可以在这里读取到未修改的 `Passage` 的内容
      */
-    var scriptFileList_earlyload: MutableSet<FileCopySpec> = hashSetOf(),
+    var scriptFileList_earlyload: MutableList<FileCopySpec> = mutableListOf(),
 
     /**
      * 预加载的 [JavaScript](https://developer.mozilla.org/zh-CN/docs/Glossary/JavaScript) 脚本文件，
@@ -38,19 +40,23 @@ data class Boot(
      *
      * 注意 [scriptFileList_preload] 文件有固定的格式，参见[样例](https://github.com/Lyoko-Jeremie/sugarcube-2-ModLoader/tree/master/src/insertTools/MyMod/MyMod_script_preload_example.js)
      */
-    var scriptFileList_preload: MutableSet<FileCopySpec> = hashSetOf(),
+    var scriptFileList_preload: MutableList<FileCopySpec> = mutableListOf(),
 
     /** [CSS](https://developer.mozilla.org/zh-CN/docs/Glossary/CSS) 样式文件 */
-    var styleFileList: MutableSet<FileCopySpec>,
+    @Required
+    var styleFileList: MutableList<FileCopySpec> = mutableListOf(),
 
     /** [JavaScript](https://developer.mozilla.org/zh-CN/docs/Glossary/JavaScript) 脚本文件，这是游戏的一部分 */
-    var scriptFileList: MutableSet<FileCopySpec>,
+    @Required
+    var scriptFileList: MutableList<FileCopySpec> = mutableListOf(),
 
     /** [twee/Twine](https://twinery.org) 剧本文件 */
-    var tweeFileList: MutableSet<FileCopySpec>,
+    @Required
+    var tweeFileList: MutableList<FileCopySpec> = mutableListOf(),
 
     /** 图片文件，尽可能不要用容易与文件中其他字符串混淆的文件路径，否则会意外破坏文件内容 */
-    var imgFileList: MutableSet<FileCopySpec>,
+    @Required
+    var imgFileList: MutableList<FileCopySpec> = mutableListOf(),
 
     /**
      * 附加文件列表，额外打包到zip中的文件，此列表中的文件不会被加载，仅作为附加文件存在
@@ -59,33 +65,34 @@ data class Boot(
      *
      * 第一个以 `readme` (不区分大小写)开头的文件会被作为 `Mod` 的说明文件，会在 `Mod 管理器` 中显示
      */
-    var additionFile: MutableSet<FileCopySpec>,
+    @Required
+    var additionFile: MutableList<FileCopySpec> = mutableListOf(),
 
     /**
      * 附加二进制文件
      *
      * 如果有需要附加的二进制文件，编写在这里时 [packModZip.ts](https://github.com/Lyoko-Jeremie/sugarcube-2-ModLoader/blob/master/src/insertTools/packModZip.ts) 会将其以二进制格式保存
      */
-    var additionBinaryFile: MutableSet<FileCopySpec> = hashSetOf(),
+    var additionBinaryFile: MutableList<FileCopySpec> = mutableListOf(),
 
     /**
      * 附加文件夹，如果有需要附加的文件夹，编写在这里时 [packModZip.ts](https://github.com/Lyoko-Jeremie/sugarcube-2-ModLoader/blob/master/src/insertTools/packModZip.ts) 会将其下所有文件以二进制格式保存
      */
-    var additionDir: MutableSet<FileCopySpec> = hashSetOf(),
+    var additionDir: MutableList<FileCopySpec> = mutableListOf(),
 
     /**
      * 依赖的插件列表，在此声明本 `Mod` 依赖哪些插件，在此处声明后会调用对应的插件，不满足的依赖会在加载日志中产生警告
      *
      * @see AddonPlugin
      */
-    var addonPlugin: MutableSet<AddonPlugin> = hashSetOf(),
+    var addonPlugin: MutableList<AbstractAddonPlugin> = mutableListOf(),
 
     /**
      * 依赖的 `Mod`列表，可以在此声明此 `Mod` 依赖哪些前置 `Mod`，不满足的依赖会在加载日志中产生警告
      *
      * @see DependenceInfo
      */
-    var dependenceInfo: MutableSet<DependenceInfo> = hashSetOf()
+    var dependenceInfo: MutableList<DependenceInfo> = mutableListOf()
 ) {
     fun buildCopySpec(): Action<in CopySpec> {
         return Action<CopySpec> {

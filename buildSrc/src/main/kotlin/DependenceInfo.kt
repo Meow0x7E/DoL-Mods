@@ -1,6 +1,7 @@
 package meow0x7e.dol
 
 import kotlinx.serialization.Serializable
+import meow0x7e.dol.plugins.AbstractAddonPlugin
 
 /**
  * 表示一个依赖 `Mod` 的信息
@@ -17,11 +18,11 @@ data class DependenceInfo(
     val version: String
 ) {
     /**
-     * 从一个现有的 [AddonPlugin] 上获取数据来构建一个 [DependenceInfo]
+     * 从一个现有的 [AbstractAddonPlugin] 上获取数据来构建一个 [DependenceInfo]
      *
-     * @param addonPlugin 一个 [AddonPlugin] 对象，将被用于初始化 [DependenceInfo]
+     * @param addonPlugin 一个 [AbstractAddonPlugin] 对象，将被用于初始化 [DependenceInfo]
      */
-    constructor(addonPlugin: AddonPlugin) : this(
+    constructor(addonPlugin: AbstractAddonPlugin) : this(
         modName = addonPlugin.modName,
         version = addonPlugin.modVersion
     )

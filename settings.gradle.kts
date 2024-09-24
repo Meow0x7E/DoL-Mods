@@ -1,3 +1,3 @@
 rootProject.name = "DoL-Mods"
 
-include("mod-YanLing", "mod-Intrgrated-Graphic-Pack")
+include("mod-YanLing", "mod-Integrated-Graphic-Pack")
