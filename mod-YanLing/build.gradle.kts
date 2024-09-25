@@ -5,7 +5,7 @@ import meow0x7e.dol.DependenceInfo
 import meow0x7e.dol.FileCopySpec
 import java.util.*
 
-version = "0.1.1"
+version = "0.1.1-Alpha"
 
 val sourceDirectory = layout.projectDirectory.dir("src")
 
@@ -30,14 +30,13 @@ val json = Json {
     prettyPrintIndent = "\t"
 }
 
-
 tasks.register<DefaultTask>("processScriptFileList") {
     doLast {
         mapOf(
-            Pair("inject_early", boot.scriptFileList_inject_early),
-            Pair("earlyload", boot.scriptFileList_earlyload),
-            Pair("preload", boot.scriptFileList_preload),
-            Pair("script", boot.scriptFileList)
+            "inject_early" to boot.scriptFileList_inject_early,
+            "earlyload" to boot.scriptFileList_earlyload,
+            "preload" to boot.scriptFileList_preload,
+            "script" to boot.scriptFileList
         ).forEach { (k, v) -> compileTypeScript(k).let { v += it } }
     }
 }
@@ -46,9 +45,7 @@ tasks.register<DefaultTask>("collectTweeFile") {
     doLast {
         FileCopySpec.findFilteredFilesRelativePaths(sourceDirectory, "assets.d/twee.d/") {
             it.isFile && it.extension == "twee"
-        }.let {
-            boot.tweeFileList += it
-        }
+        }.let { boot.tweeFileList += it }
     }
 }
 
@@ -58,9 +55,9 @@ tasks.named<DefaultTask>("buildBootJson") {
         tasks.named("collectTweeFile")
     )
 
-    doLast {
-        val bootJsonFile = layout.buildDirectory.get().file("boot.json").asFile
+    val bootJsonFile = File(layout.buildDirectory.get().asFile, "boot.json")
 
+    doLast {
         boot.buildBootJson(bootJsonFile, json).let(logger::lifecycle)
 
         zipCopySpec.run {
@@ -73,19 +70,18 @@ tasks.named<DefaultTask>("buildBootJson") {
 tasks.named<Zip>("package") { with(zipCopySpec) }
 
 fun compileTypeScript(name: String): List<FileCopySpec> {
-    File(layout.projectDirectory.asFile, "src/typescript.d/${name}.d").let {
-        if (!it.exists() && !it.isDirectory)
-            return listOf()
-    }
+    layout.projectDirectory.dir("src/typescript.d/${name}.d").asFile
+        .run { exists() && isDirectory }
+        .let { if (!it) return listOf() }
 
     ProcessBuilder("yarn", "workspace", "${project.name}.${name}", "tsc", "--listEmittedFiles")
         .directory(rootDir)
         .start()
-        ?.let {
-            logger.lifecycle(it.inputReader().readText())
-            if (it.waitFor() != 0)
-                throw GradleException("在编译 TypeScript workspace ${project.name}.${name} 时 yarn 返回非 0 值")
-        }
+        // 把 Yarn 的日志输出到 lifecycle 级别的日志中
+        .also { logger.lifecycle(it.inputReader().readText()) }
+        .waitFor()
+        // 如果 Yarn 的返回值不为 0 则终止 Gradle 构建
+        .let { if (it != 0) throw GradleException("在 Workspace ${project.name}.${name} 编译 TypeScript 时 Yarn 返回非 0 值！") }
 
     return FileCopySpec.findFilteredFilesRelativePaths(
         layout.buildDirectory.get(),

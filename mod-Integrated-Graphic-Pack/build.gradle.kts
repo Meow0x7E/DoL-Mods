@@ -1,11 +1,14 @@
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.json.*
-import meow0x7e.dol.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.encodeToStream
+import meow0x7e.dol.Boot
+import meow0x7e.dol.DependenceInfo
+import meow0x7e.dol.FileCopySpec
+import meow0x7e.dol.FileLocation
 import meow0x7e.dol.plugins.BeautySelectorAddon
+import meow0x7e.text.getTerminalDisplayLength
 
-version = "1.0.0-Alpha"
-
-val buildDirectory = layout.buildDirectory.get().asFile
+version = "1.0.0-Bata"
 
 /** boot.json */
 val boot = Boot(
@@ -38,89 +41,119 @@ val json = Json {
 }
 
 val imgPackList = listOf<Map<String, Any>>(
-    mutableMapOf(
+    mapOf(
         "name" to "GameOriginalImagePack",
-        "enable" to true,
-        "repoUrl" to ""
+        "include" to true,
+        "repoUrl" to "https://github.com/Eltirosto/Degrees-of-Lewdity-Chinese-Localization"
     ),
-    mutableMapOf(
+    mapOf(
         "name" to "Degrees of Lewdity Graphics Mod",
-        "enable" to true,
+        "include" to true,
         "repoUrl" to "https://gitgud.io/BEEESSS/degrees-of-lewdity-graphics-mod"
     ),
-    mutableMapOf(
+    mapOf(
         "name" to "BEEESSS Community Sprite Compilation",
-        "enable" to true,
+        "include" to true,
         "repoUrl" to "https://gitgud.io/Kaervek/kaervek-beeesss-community-sprite-compilation"
     ),
-    mutableMapOf(
+    mapOf(
         "name" to "BEEESSS Wax",
-        "enable" to true,
+        "include" to true,
         "repoUrl" to "https://gitgud.io/GTXMEGADUDE/beeesss-wax"
     ),
-    mutableMapOf(
+    mapOf(
         "name" to "通用战斗美化",
-        "enable" to true,
+        "include" to true,
         "repoUrl" to "https://github.com/site098/mysterious"
     ),
-    mutableMapOf(
+    mapOf(
         "name" to "Saver Meal",
-        "enable" to true,
+        "include" to true,
         "repoUrl" to "https://gitgud.io/GTXMEGADUDE/double-cheeseburger"
     ),
-    mutableMapOf(
+    mapOf(
         "name" to "DOL_BJ_hair_extend",
-        "enable" to true,
+        "include" to true,
         "repoUrl" to "https://github.com/zubonko/DOL_BJ_hair_extend"
     ),
-    mutableMapOf(
+    mapOf(
         "name" to "Tattoo",
-        "enable" to true,
+        "include" to true,
         "repoUrl" to "https://github.com/zubonko/DOL_BJ_hair_extend"
     )
-)
+).filter { it["include"] as Boolean }
 
-tasks.register<DefaultTask>("processImgFile") {
-    val imgTypes = mutableListOf("gif", "svg", "png")
+tasks.register<DefaultTask>("buildMarkdown") {
+    val readme = layout.buildDirectory.file("Readme.md")
+    outputs.file(readme)
 
     doLast {
-        imgPackList.reversed().map { map ->
-            val name = map["name"] as String
+        val f = readme.get().asFile
+        val l = imgPackList.map { it["name"] as String to (it["repoUrl"] as String).let { "[点击跳转](${it})" } }
+        val targetLength = l.maxOfOrNull { it.first.getTerminalDisplayLength() }!! + 2 to
+                l.maxOfOrNull { it.second.getTerminalDisplayLength() }!! + 2
 
-            val baseDirectoryRelativePath = "img.d/${name}"
-            val imgFileListJson = "img.d/${name}/imgFileList.json"
+        f.bufferedWriter().apply {
+            appendLine(buildTableLine("美化名称" to "仓库链接", targetLength))
+            appendLine(buildTableLine(":---:" to ":---:", targetLength))
 
-            val baseDirectory = layout.projectDirectory.dir(baseDirectoryRelativePath)
-            val imgFileListFile = layout.buildDirectory.get().file(imgFileListJson).asFile.apply { parentFile::mkdirs }
+            l.forEach { appendLine(buildTableLine(it, targetLength)) }
 
-            val fileCopySpecList = FileCopySpec.findFilteredFilesRelativePaths(baseDirectory, "img") {
-                it.isFile && it.extension.let(imgTypes::contains)
-            }
-
-            @OptIn(ExperimentalSerializationApi::class)
-            json.encodeToStream(fileCopySpecList, imgFileListFile.outputStream())
-
-            FileLocation(imgFileListFile, imgFileListJson)
-                .toFileCopySpec()
-                .let(boot.additionFile::add)
-
-            FileLocation(baseDirectory.asFile, baseDirectoryRelativePath)
-                .toFileCopySpec()
-                .let(boot.additionDir::add)
-
-            BeautySelectorAddon.TypeData(name, imgFileListJson)
-        }.let { list ->
-            (boot.addonPlugin.find { it.modName == "BeautySelectorAddon" } as? BeautySelectorAddon)!!.types += list
+            flush()
+            close()
         }
+
+        boot.additionFile.add(FileLocation(f, f.name).toFileCopySpec())
+    }
+}
+
+tasks.register<DefaultTask>("processImgFile") {
+    val imgTypes = setOf("gif", "svg", "png")
+    val filter = { it: File -> it.isFile && it.extension.let(imgTypes::contains) }
+
+    doLast {
+        imgPackList.reversed()
+            .map {
+                val type = it["name"] as String
+
+                val baseDirectoryRelativePath = "img.d/${type}"
+                val imgFileListJson = "img.d/${type}/imgFileList.json"
+
+                val baseDirectory = layout.projectDirectory.dir(baseDirectoryRelativePath)
+                val imgFileListFile = layout.buildDirectory.file(imgFileListJson).get().asFile
+                    .apply { parentFile.mkdirs() }
+
+                @OptIn(ExperimentalSerializationApi::class)
+                json.encodeToStream(
+                    FileCopySpec.findFilteredFilesRelativePaths(baseDirectory, "img", filter),
+                    imgFileListFile.outputStream()
+                )
+
+                FileLocation(imgFileListFile, imgFileListJson)
+                    .toFileCopySpec()
+                    .let(boot.additionFile::add)
+
+                FileLocation(baseDirectory.asFile, baseDirectoryRelativePath)
+                    .toFileCopySpec()
+                    .let(boot.additionDir::add)
+
+                BeautySelectorAddon.TypeData(type, imgFileListJson)
+            }.let { typeDataList ->
+                // 如果是 Null 那还构建个球，直接断言
+                (boot.addonPlugin.find { it.modName == "BeautySelectorAddon" } as? BeautySelectorAddon)!!.types += typeDataList
+            }
     }
 }
 
 tasks.named<DefaultTask>("buildBootJson") {
-    dependsOn(tasks.named("processImgFile"))
+    dependsOn(
+        tasks.named("processImgFile"),
+        tasks.named("buildMarkdown")
+    )
+
+    val bootJsonFile = File(layout.buildDirectory.get().asFile, "boot.json")
 
     doLast {
-        val bootJsonFile = File(buildDirectory, "boot.json")
-
         boot.buildBootJson(bootJsonFile, json).let(logger::lifecycle)
 
         zipCopySpec.run {
@@ -131,3 +164,14 @@ tasks.named<DefaultTask>("buildBootJson") {
 }
 
 tasks.named<Zip>("package") { with(zipCopySpec) }
+
+fun centerString(str: String, targetLength: Int): String {
+    val length = str.getTerminalDisplayLength()
+    val before = (targetLength - length) / 2
+    val after = targetLength - length - before
+
+    return "${" ".repeat(before)}${str}${" ".repeat(after)}"
+}
+
+fun buildTableLine(pair: Pair<String, String>, len: Pair<Int, Int>): String =
+    "|${centerString(pair.first, len.first)}|${centerString(pair.second, len.second)}|"

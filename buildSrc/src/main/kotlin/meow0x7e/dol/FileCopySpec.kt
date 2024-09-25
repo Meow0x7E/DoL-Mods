@@ -90,7 +90,7 @@ data class FileCopySpec(
      * @return 一个 Gradle 的 [Action]，可以添加到Gradle的[CopySpec]中
      */
     fun copyToSpecYesThisIsTheFile(): Action<in CopySpec> = Action<CopySpec> {
-        copyToSpec(destination.relativeFilePath.parent.toString()).execute(this)
+        copyToSpec(destination.relativeFilePath.parent?.toString() ?: "./").execute(this)
     }
 }
 
