@@ -83,7 +83,7 @@ data class Boot(
     /**
      * 依赖的插件列表，在此声明本 `Mod` 依赖哪些插件，在此处声明后会调用对应的插件，不满足的依赖会在加载日志中产生警告
      *
-     * @see AddonPlugin
+     * @see AbstractAddonPlugin
      */
     var addonPlugin: MutableList<AbstractAddonPlugin> = mutableListOf(),
 
