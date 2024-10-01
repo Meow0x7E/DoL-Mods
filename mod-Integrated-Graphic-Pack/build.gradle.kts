@@ -7,25 +7,19 @@ import meow0x7e.dol.FileCopySpec
 import meow0x7e.dol.FileLocation
 import meow0x7e.dol.plugins.BeautySelectorAddon
 import meow0x7e.text.getTerminalDisplayLength
+import java.io.ByteArrayOutputStream
 
 version = "1.0.0-Bata"
 
 /** boot.json */
 val boot = Boot(
-    name = project.name,
-    version = project.version.toString(),
-    scriptFileList_inject_early = mutableListOf(),
-    styleFileList = mutableListOf(),
-    scriptFileList = mutableListOf(),
-    tweeFileList = mutableListOf(),
-    imgFileList = mutableListOf(),
-    additionFile = mutableListOf(),
+    project,
     addonPlugin = mutableListOf(
-        BeautySelectorAddon(modVersion = "v2.0.0")
+        BeautySelectorAddon(modVersion = "^2.0.0")
     ),
     dependenceInfo = mutableListOf(
-        DependenceInfo("ModLoader", "^2.18.3"),
-        DependenceInfo("GameVersion", "^0.5.0.6"),
+        DependenceInfo("ModLoader", "^2.20.1"),
+        DependenceInfo("GameVersion", "^0.5.2.8"),
         DependenceInfo("BeautySelectorAddon", "^2.0.0")
     )
 )
@@ -85,17 +79,21 @@ val imgPackList = listOf<Map<String, Any>>(
 
 tasks.register<DefaultTask>("buildMarkdown") {
     val readme = layout.buildDirectory.file("Readme.md")
+    val readmeFile = readme.get().asFile
+
     outputs.file(readme)
+    boot.additionFile.add(FileLocation(readmeFile, readmeFile.name).toFileCopySpec())
 
     doLast {
-        val f = readme.get().asFile
-        val l = imgPackList.map { it["name"] as String to (it["repoUrl"] as String).let { "[点击跳转](${it})" } }
+        val buf = ByteArrayOutputStream(1024)
+
+        val l = imgPackList.map { (it["name"] as String) to (it["repoUrl"] as String).let { "[点击跳转](${it})" } }
         val targetLength = l.maxOfOrNull { it.first.getTerminalDisplayLength() }!! + 2 to
                 l.maxOfOrNull { it.second.getTerminalDisplayLength() }!! + 2
 
-        f.bufferedWriter().apply {
+        buf.bufferedWriter().apply {
             appendLine(buildTableLine("美化名称" to "仓库链接", targetLength))
-            appendLine(buildTableLine(":---:" to ":---:", targetLength))
+            appendLine(buildTableLine(":${"-".repeat(targetLength.first - 2)}:" to ":${"-".repeat(targetLength.second - 2)}:", targetLength))
 
             l.forEach { appendLine(buildTableLine(it, targetLength)) }
 
@@ -103,7 +101,9 @@ tasks.register<DefaultTask>("buildMarkdown") {
             close()
         }
 
-        boot.additionFile.add(FileLocation(f, f.name).toFileCopySpec())
+        buf.writeTo(readmeFile.outputStream())
+
+        logger.quiet(buf.toString())
     }
 }
 

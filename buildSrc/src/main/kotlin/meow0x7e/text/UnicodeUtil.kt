@@ -14,7 +14,13 @@ class UnicodeUtil {
 
         fun getTerminalDisplayLength(c: Char): Int = if (isFullWidthCharacter(c)) 2 else 1
 
-        fun getTerminalDisplayLength(s: String): Int = s.fold(0) { _, c -> getTerminalDisplayLength(c) }
+        fun getTerminalDisplayLength(s: String): Int {
+            var len = 0
+            s.forEach {
+                len += getTerminalDisplayLength(it)
+            }
+            return len
+        }
     }
 }
 

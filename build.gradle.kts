@@ -36,7 +36,7 @@ subprojects.onEach { project ->
 
         eachFile { logger.quiet("压缩 -> $path") }
 
-        doLast { logger.lifecycle("Mod 打包完成，产物已输出至 ${destinationDirectory.get().asFile}/${archiveFileName.get() }") }
+        doLast { logger.lifecycle("Mod 打包完成，产物已输出至 ${destinationDirectory.get().asFile}/${archiveFileName.get()}") }
     }
 
     project.tasks.register<DefaultTask>("clean") {

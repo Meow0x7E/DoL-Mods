@@ -7,10 +7,29 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToStream
 import meow0x7e.dol.plugins.AbstractAddonPlugin
 import org.gradle.api.Action
+import org.gradle.api.Project
 import org.gradle.api.file.CopySpec
 import java.io.ByteArrayOutputStream
 import java.io.File
 
+/**
+ * `Boot` 类表示一个 `DoL Mod` 的基本配置和文件信息
+ *
+ * @property name Mod 的名称
+ * @property version Mod 的版本
+ * @property scriptFileList_inject_early 提前注入的 JavaScript 脚本列表，Mod 加载后立即执行
+ * @property scriptFileList_earlyload 提前加载的 JavaScript 脚本列表，在inject_early脚本后执行
+ * @property scriptFileList_preload 预加载的 JavaScript 脚本列表，在引擎初始化前执行
+ * @property styleFileList CSS样式文件列表
+ * @property scriptFileList JavaScript 脚本文件列表，是游戏的一部分
+ * @property tweeFileList Twine剧本文件列表
+ * @property imgFileList 图片文件列表
+ * @property additionFile 附加文件列表，仅作为额外文件存在
+ * @property additionBinaryFile 附加二进制文件列表
+ * @property additionDir 附加文件夹列表，包含所有文件以二进制格式保存
+ * @property addonPlugin 依赖的插件列表
+ * @property dependenceInfo 依赖的 Mod 列表
+ */
 @Serializable
 data class Boot(
     /** Mod 名称 */
@@ -94,6 +113,62 @@ data class Boot(
      */
     var dependenceInfo: MutableList<DependenceInfo> = mutableListOf()
 ) {
+    /**
+     * 构造一个新的 `Boot` 实例
+     *
+     * @param project [Project]对象，用于获取 Mod 的名称和版本
+     * @param scriptFileList_inject_early 提前注入的 JavaScript 脚本列表，Mod 加载后立即执行 脚本列表
+     * @param scriptFileList_earlyload 提前加载的 JavaScript 脚本列表，在inject_early脚本后执行列表
+     * @param scriptFileList_preload 预加载的 JavaScript 脚本列表，在引擎初始化前执行
+     * @param styleFileList CSS样式文件列表
+     * @param scriptFileList JavaScript 脚本文件列表，是游戏的一部分
+     * @param tweeFileList Twine剧本文件列表
+     * @param imgFileList 图片文件列表
+     * @param additionFile 附加文件列表，仅作为额外文件存在
+     * @param additionBinaryFile 附加二进制文件列表
+     * @param additionDir 附加文件夹列表，包含所有文件以二进制格式保存
+     * @param addonPlugin 依赖的插件列表
+     * @param dependenceInfo 依赖的 Mod 列表
+     */
+    constructor(
+        project: Project,
+        scriptFileList_inject_early: MutableList<FileCopySpec> = mutableListOf(),
+        scriptFileList_earlyload: MutableList<FileCopySpec> = mutableListOf(),
+        scriptFileList_preload: MutableList<FileCopySpec> = mutableListOf(),
+        styleFileList: MutableList<FileCopySpec> = mutableListOf(),
+        scriptFileList: MutableList<FileCopySpec> = mutableListOf(),
+        tweeFileList: MutableList<FileCopySpec> = mutableListOf(),
+        imgFileList: MutableList<FileCopySpec> = mutableListOf(),
+        additionFile: MutableList<FileCopySpec> = mutableListOf(),
+        additionBinaryFile: MutableList<FileCopySpec> = mutableListOf(),
+        additionDir: MutableList<FileCopySpec> = mutableListOf(),
+        addonPlugin: MutableList<AbstractAddonPlugin> = mutableListOf(),
+        dependenceInfo: MutableList<DependenceInfo> = mutableListOf()
+    ) : this(
+        project.name.substring(4),
+        project.version.toString(),
+        scriptFileList_inject_early,
+        scriptFileList_earlyload,
+        scriptFileList_preload,
+        styleFileList,
+        scriptFileList,
+        tweeFileList,
+        imgFileList,
+        additionFile,
+        additionBinaryFile,
+        additionDir,
+        addonPlugin,
+        dependenceInfo
+    )
+
+    /**
+     * 构建一个用于复制文件的 [CopySpec] 操作。
+     *
+     * 此方法通过遍历所有需要被复制的文件和目录列表(包括 JavaScript 脚本、CSS 样式文件、图片文件等)，
+     * 并为每个文件或目录创建一个 [CopySpec] 操作，以便在 Gradle 构建过程中进行复制。
+     *
+     * @return 一个 [Action] 对象，该对象包含了所有必要的复制操作。
+     */
     fun buildCopySpec(): Action<in CopySpec> {
         return Action<CopySpec> {
             listOf(
@@ -117,6 +192,16 @@ data class Boot(
     }
 
 
+    /**
+     * 将 `Boot` 类的实例序列化为 JSON 格式，并写入到指定的文件中。
+     *
+     * 此方法使用 `Kotlinx.serialization` 库将 `Boot` 类的实例(即 Mod 的配置信息)序列化为 JSON 格式，
+     * 然后将序列化后的数据写入到提供的文件中。
+     *
+     * @param bootJsonFile 目标文件，序列化后的 JSON 数据将被写入此文件。
+     * @param json 用于序列化的 Json 对象。
+     * @return 序列化后的 JSON 字符串
+     */
     fun buildBootJson(bootJsonFile: File, json: Json): String {
         // 初始缓冲区大小: 16KB
         val buf = ByteArrayOutputStream(16384)

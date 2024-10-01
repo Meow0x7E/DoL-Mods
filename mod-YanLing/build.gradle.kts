@@ -11,15 +11,13 @@ val sourceDirectory = layout.projectDirectory.dir("src")
 
 /** boot.json */
 val boot = Boot(
-    name = project.name,
-    version = project.version.toString(),
+    project,
     dependenceInfo = mutableListOf(
         DependenceInfo("ModLoader", "^2.18.3"),
         DependenceInfo("GameVersion", "^0.5.0.6"),
         DependenceInfo("Simple Frameworks", "^1.15.3")
     )
 )
-
 /** package 打包时使用的 copySpec */
 var zipCopySpec = copySpec()
 
